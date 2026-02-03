@@ -18,7 +18,10 @@ output_file    <- "bedrock_batch_large.jsonl"
 dpi_setting    <- 150
 embed_length   <- 1024
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> b986668 (Remove secrets)
 
 # creds <- locate_credentials(region = "ca-central-1")
 # Initialize S3 client
