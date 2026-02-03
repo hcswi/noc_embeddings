@@ -107,3 +107,6 @@ for (key in pdf_keys) {
 close(con)
 message("Batch file '", output_file, "' is ready for upload.")
 
+s3$put_object(Bucket = s3_bucket, 
+              Key = paste0("bedrock_claude_batch_500/", basename("bedrock_claude_batch_large.jsonl")),
+              Body = "bedrock_claude_batch_large.jsonl")
