@@ -67,27 +67,6 @@ qwen_resp <- test_extract[[1]] |> openai_chat(.model = "Qwen/Qwen3-VL-8B-Instruc
   
 get_reply(qwen_resp)
 
-library(purrr)
-library(progressr)
-
-handlers(global = TRUE)
-handlers("rstudio")
-
-qwen_resps <- with_progress({
-  p <- progressor(along = messages_list)
-  
-  map(messages_list, \(msg) {
-    p()
-    safely(\(x) x |>
-             openai_chat(
-               .model = "Qwen/Qwen3-VL-8B-Instruct",
-               .api_url = qwen_api_endpoint,
-               .tools = list(),
-               .tool_choice = "none"
-             )
-    )(msg)
-  })
-})
 
 # qwen_resps[[i]]$result or qwen_resps[[i]]$error
 
@@ -170,65 +149,36 @@ bad_results   <- keep(results, ~ !.x$ok)
 messages_list <- map(ok_results, "messages")   # only successful message payloads
 errors_list   <- map(bad_results, ~ list(key = .x$key, error = .x$error))
 
+library(purrr)
+library(progressr)
 
-# --- Processing Loop ---
-for (key in pdf_keys) {
-  message("Processing: ", key)
+handlers(global = TRUE)
+handlers("rstudio")
+
+qwen_resps <- with_progress({
+  p <- progressor(along = messages_list)
   
-  # 1. Create a workspace for this specific PDF
-  tmp_dir <- tempfile(pattern = "pdf_work_")
-  dir.create(tmp_dir)
-  tmp_pdf <- file.path(tmp_dir, "input.pdf")
-  
-  tryCatch({
-    # 2. Download from S3
-    s3$download_file(Bucket = s3_bucket, Key = key, Filename = tmp_pdf)
-    
-    file_name_only <- basename(key)
-    
-    b64_string <- base64enc::base64encode(tmp_pdf)
-    
-    # Prepare Clean recordId (Alphanumeric only)
-    record_id <- gsub("[^[:alnum:]]", "", file_name_only)
-    
-    
-    # Construct Bedrock JSON
-    record <- list(
-      recordId = record_id,
-      modelInput = list(
-        anthropic_version = "bedrock-2023-05-31",
-        max_tokens = max_tokens,
-        system = sys_prompt,
-        messages = list(
-          role = "user",
-          content = list(
-            list(
-              type = "image",
-              media_type = "application/pdf",
-              data = b64_string
-            ),
-            list(
-              type = "text",
-              text = prompt
-            )
-          )
-        )
-      )
-    )
-    
-    writeLines(jsonlite::toJSON(record, auto_unbox = TRUE), con)
-    
-  }, error = function(e) {
-    message("Failed to process ", key, ": ", e$message)
-  }, finally = {
-    # 5. Recursively remove the temp directory and its images
-    unlink(tmp_dir, recursive = TRUE)
+  map(messages_list, \(msg) {
+    p()
+    safely(\(x) x |>
+             openai_chat(
+               .model = "Qwen/Qwen3-VL-8B-Instruct",
+               .api_url = qwen_api_endpoint,
+               .tools = list(),
+               .tool_choice = "none"
+             )
+    )(msg)
   })
-}
+})
 
-close(con)
-message("Batch file '", output_file, "' is ready for upload.")
 
-s3$put_object(Bucket = s3_bucket, 
-              Key = paste0("bedrock_claude_batch_500/", basename("bedrock_claude_batch_large.jsonl")),
-              Body = "bedrock_claude_batch_large.jsonl")
+reply_vec <- map_chr(
+  qwen_resps,
+  ~ if (is.null(.x$error)) get_reply(.x$result) else NA_character_
+)
+
+files <- map_chr(ok_results, "key") |> basename()
+sample_nocs_qwen3_extract <- tibble(file = paste0("https://pdf.hres.ca/noc_pm/", files), resp_json = reply_vec)
+
+
+
