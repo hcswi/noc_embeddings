@@ -181,4 +181,229 @@ files <- map_chr(ok_results, "key") |> basename()
 sample_nocs_qwen3_extract <- tibble(file = paste0("https://pdf.hres.ca/noc_pm/", files), resp_json = reply_vec)
 
 
+result <- sample_nocs_qwen3_extract %>%
+  mutate(
+    parsed = map(resp_json, ~fromJSON(.x, simplifyVector = TRUE)),
+    data_found = map_lgl(parsed, ~.x$data_found),
+    reason = map_chr(parsed, ~ifelse(is.null(.x$reason), NA_character_, .x$reason)),
+    dossier_id = map_chr(parsed, ~ifelse(is.null(.x$dossier_id), NA_character_, .x$dossier_id)),
+    submission_no = map_chr(parsed, ~ifelse(is.null(.x$submission_no), NA_character_, .x$submission_no)),
+    manufacturer_name = map_chr(parsed, ~{
+      if(!is.null(.x$manufacturer) && is.list(.x$manufacturer)) {
+        ifelse(is.null(.x$manufacturer$name), NA_character_, .x$manufacturer$name)
+      } else {
+        NA_character_
+      }
+    }),
+    manufacturer_address = map_chr(parsed, ~{
+      if(!is.null(.x$manufacturer) && is.list(.x$manufacturer)) {
+        ifelse(is.null(.x$manufacturer$address), NA_character_, .x$manufacturer$address)
+      } else {
+        NA_character_
+      }
+    })
+  ) %>%
+  select(-parsed)  # Only remove the temporary parsed column
 
+safe_extract <- function(x, ...) {
+  result <- tryCatch({
+    val <- x
+    for (key in list(...)) {
+      if (is.null(val) || !is.list(val)) return(NA_character_)
+      val <- val[[key]]
+    }
+    if (is.null(val)) NA_character_ else as.character(val)
+  }, error = function(e) NA_character_)
+  return(result)
+}
+
+safe_extract_array <- function(x, ..., sep = " | ") {
+  result <- tryCatch({
+    val <- x
+    for (key in list(...)) {
+      if (is.null(val) || !is.list(val)) return(NA_character_)
+      val <- val[[key]]
+    }
+    if (is.null(val)) {
+      NA_character_
+    } else if (is.vector(val) && length(val) > 1) {
+      paste(val, collapse = sep)
+    } else {
+      as.character(val)
+    }
+  }, error = function(e) NA_character_)
+  return(result)
+}
+
+# Parse JSON and create new columns
+result <- sample_nocs_qwen3_extract %>%
+  mutate(
+    # Parse the JSON string
+    parsed = map(resp_json, ~fromJSON(.x, simplifyVector = TRUE)),
+    
+    # Common field
+    data_found = map_lgl(parsed, ~.x$data_found),
+    
+    # Fields when data_found = FALSE
+    reason = map_chr(parsed, ~safe_extract(.x, "reason")),
+    
+    # Direct fields when data_found = TRUE (or in partial_data)
+    dossier_id = map_chr(parsed, ~{
+      if (!is.null(.x$dossier_id)) {
+        safe_extract(.x, "dossier_id")
+      } else {
+        safe_extract(.x, "partial_data", "dossier_id")
+      }
+    }),
+    
+    submission_no = map_chr(parsed, ~{
+      if (!is.null(.x$submission_no)) {
+        safe_extract(.x, "submission_no")
+      } else {
+        safe_extract(.x, "partial_data", "submission_no")
+      }
+    }),
+    
+    date = map_chr(parsed, ~{
+      if (!is.null(.x$date)) {
+        safe_extract(.x, "date")
+      } else {
+        safe_extract(.x, "partial_data", "date")
+      }
+    }),
+    
+    product_name = map_chr(parsed, ~{
+      if (!is.null(.x$product_name)) {
+        safe_extract(.x, "product_name")
+      } else {
+        safe_extract(.x, "partial_data", "product_name")
+      }
+    }),
+    
+    medicinal_ingredients = map_chr(parsed, ~{
+      if (!is.null(.x$medicinal_ingredients)) {
+        safe_extract(.x, "medicinal_ingredients")
+      } else {
+        safe_extract(.x, "partial_data", "medicinal_ingredients")
+      }
+    }),
+    
+    reason_for_submission = map_chr(parsed, ~{
+      if (!is.null(.x$reason_for_submission)) {
+        safe_extract(.x, "reason_for_submission")
+      } else {
+        safe_extract(.x, "partial_data", "reason_for_submission")
+      }
+    }),
+    
+    species = map_chr(parsed, ~{
+      if (!is.null(.x$species)) {
+        safe_extract(.x, "species")
+      } else {
+        safe_extract(.x, "partial_data", "species")
+      }
+    }),
+    
+    drug_identification_number_route_form_strength = map_chr(parsed, ~{
+      if (!is.null(.x$drug_identification_number_route_form_strength)) {
+        safe_extract_array(.x, "drug_identification_number_route_form_strength", sep = " | ")
+      } else {
+        safe_extract_array(.x, "partial_data", "drug_identification_number_route_form_strength", sep = " | ")
+      }
+    }),
+    
+    
+    canadian_reference_product = map_chr(parsed, ~{
+      if (!is.null(.x$canadian_reference_product)) {
+        safe_extract(.x, "canadian_reference_product")
+      } else {
+        safe_extract(.x, "partial_data", "canadian_reference_product")
+      }
+    }),
+    
+    # Manufacturer fields
+    manufacturer_name = map_chr(parsed, ~{
+      if (!is.null(.x$manufacturer)) {
+        safe_extract(.x, "manufacturer", "name")
+      } else {
+        safe_extract(.x, "partial_data", "manufacturer", "name")
+      }
+    }),
+    
+    manufacturer_street = map_chr(parsed, ~{
+      if (!is.null(.x$manufacturer)) {
+        safe_extract(.x, "manufacturer", "street")
+      } else {
+        safe_extract(.x, "partial_data", "manufacturer", "street")
+      }
+    }),
+    
+    manufacturer_city = map_chr(parsed, ~{
+      if (!is.null(.x$manufacturer)) {
+        safe_extract(.x, "manufacturer", "city")
+      } else {
+        safe_extract(.x, "partial_data", "manufacturer", "city")
+      }
+    }),
+    
+    manufacturer_province = map_chr(parsed, ~{
+      if (!is.null(.x$manufacturer)) {
+        safe_extract(.x, "manufacturer", "province")
+      } else {
+        safe_extract(.x, "partial_data", "manufacturer", "province")
+      }
+    }),
+    
+    manufacturer_country = map_chr(parsed, ~{
+      if (!is.null(.x$manufacturer)) {
+        safe_extract(.x, "manufacturer", "country")
+      } else {
+        safe_extract(.x, "partial_data", "manufacturer", "country")
+      }
+    }),
+    
+    manufacturer_postal_code = map_chr(parsed, ~{
+      if (!is.null(.x$manufacturer)) {
+        safe_extract(.x, "manufacturer", "postal_code")
+      } else {
+        safe_extract(.x, "partial_data", "manufacturer", "postal_code")
+      }
+    }),
+    
+    # Authorizing official fields
+    authorizing_official_name = map_chr(parsed, ~{
+      if (!is.null(.x$authorizing_official)) {
+        safe_extract(.x, "authorizing_official", "name")
+      } else {
+        safe_extract(.x, "partial_data", "authorizing_official", "name")
+      }
+    }),
+    
+    authorizing_official_title = map_chr(parsed, ~{
+      if (!is.null(.x$authorizing_official)) {
+        safe_extract(.x, "authorizing_official", "title")
+      } else {
+        safe_extract(.x, "partial_data", "authorizing_official", "title")
+      }
+    }),
+    
+    authorizing_official_division = map_chr(parsed, ~{
+      if (!is.null(.x$authorizing_official)) {
+        safe_extract(.x, "authorizing_official", "division")
+      } else {
+        safe_extract(.x, "partial_data", "authorizing_official", "division")
+      }
+    }),
+    
+    authorizing_official_directorate = map_chr(parsed, ~{
+      if (!is.null(.x$authorizing_official)) {
+        safe_extract(.x, "authorizing_official", "directorate")
+      } else {
+        safe_extract(.x, "partial_data", "authorizing_official", "directorate")
+      }
+    })
+  ) %>%
+  # Remove the temporary parsed column and optionally the original JSON
+  select(-parsed)
+
+write_csv(result, file = "sample_nocs_qwen3_extract.csv")
