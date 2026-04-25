@@ -1,0 +1,7 @@
+{
+    "inputText": string,
+    "inputImage": base64-encoded string,
+    "embeddingConfig": {
+        "outputEmbeddingLength": 256 | 384 | 1024
+    }
+}
