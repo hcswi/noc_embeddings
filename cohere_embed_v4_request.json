@@ -1,0 +1,16 @@
+{
+  "input_type": "search_document | search_query | classification | clustering",
+  "texts": ["..."],                      // optional; text-only
+  "images": ["data:<mime>;base64,..."],  // optional; image-only
+  "inputs": [
+    { "content": [
+        { "type": "text",      "text": "..." },
+        { "type": "image_url", "image_url": {"url": "data:<mime>;base64,..."} }
+      ]
+    }
+  ],                                     // optional; mixed (interleaved) text+image
+  "embedding_types": ["float" | "int8" | "uint8" | "binary" | "ubinary"],
+  "output_dimension": 256 | 512 | 1024 | 1536,
+  "max_tokens": 128000,
+  "truncate": "NONE | LEFT | RIGHT"
+}
