@@ -1,0 +1,11 @@
+{
+  "anthropic_version": "bedrock-2023-05-31",
+  "system": "You are an expert in AWS infrastructure and Kubernetes.",
+  "max_tokens": 1000,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain the role of Transit Gateway in an EKS sandwich architecture."
+    }
+  ]
+}
