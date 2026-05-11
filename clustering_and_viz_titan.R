@@ -24,7 +24,8 @@ s3 <- paws::s3(
         session_token = Sys.getenv("AWS_SESSION_TOKEN")
       )),
     endpoint = paste0("https://", Sys.getenv("AWS_S3_ENDPOINT")),
-    region = Sys.getenv("AWS_DEFAULT_REGION"))
+    region = Sys.getenv("AWS_DEFAULT_REGION"),
+    signature_version = "v4")
 )
 
 # 1. List all PDF objects in the bucket
@@ -79,6 +80,16 @@ colnames(umap_df) <- c("UMAP1", "UMAP2")
 umap_df$s3_url <- rownames(embedding_matrix) 
 umap_df <- umap_df %>% left_join(final_df_filter)
 
+eccrd_50_image_type_codes <- select(eccrd_50_image_type_codes, image_type_code = Image_Type_Code, document_type_description = Description, program = Program) 
+
+umap_df <- umap_df %>% left_join(eccrd_50_image_type_codes %>% mutate_all(as.character))
+library(readr)
+write_csv(umap_df, file = "umap_df_20260511.csv")
+
+s3$put_object(Bucket = s3_bucket,
+              Key = paste0(s3_prefix, "umap_df_20260511.csv"),
+              Body = readBin("umap_df_20260511.csv", "raw", n = file.info("umap_df_20260511.csv")$size),
+              ContentType = "text/csv")
 
 library(plotly)
 library(htmlwidgets)
@@ -87,6 +98,66 @@ p <- ggplot(umap_df, aes(x = UMAP1, y = UMAP2, color = image_type_code)) +
   geom_point(alpha = 0.7) +
   theme_minimal() +
   labs(title = "Interactive Document Clusters")
+
+p <- ggplot(umap_df, aes(x = UMAP1, y = UMAP2, color = document_type_description)) +
+  # Use a smaller stroke and size for 100k points
+  geom_point(alpha = 0.7, size = 0.5) + 
+  theme_minimal() +
+  labs(title = "Document Clusters by Program",
+       x = "UMAP Dimension 1",
+       y = "UMAP Dimension 2",
+       color = "Doc Type") +
+  # Add the faceting here
+  # ncol = 4 ensures it doesn't get too wide; scales = "fixed" keeps clusters comparable
+  facet_wrap(~program, ncol = 4) +
+  # Improve legend and label legibility
+  theme(legend.position = "bottom",
+        strip.text = element_text(face = "bold"))
+
+md_plot <- filter(umap_df, program == "HC Medical Device") %>% 
+  ggplot(aes(x = UMAP1, y = UMAP2, color = document_type_description)) +
+  # Use a smaller stroke and size for 100k points
+  geom_point(alpha = 0.7, size = 0.7) + 
+  theme_minimal() +
+  labs(title = "Medical Device LPCO",
+       x = "UMAP Dimension 1",
+       y = "UMAP Dimension 2",
+       color = "Doc Type")
+
+ocs_plot <- filter(umap_df, program == "HC Office of Controlled Substances") %>% 
+  ggplot(aes(x = UMAP1, y = UMAP2, color = document_type_description)) +
+  # Use a smaller stroke and size for 100k points
+  geom_point(alpha = 0.7, size = 0.7) + 
+  theme_minimal() +
+  labs(title = "Office of Controlled Substances LPCO",
+       x = "UMAP Dimension 1",
+       y = "UMAP Dimension 2",
+       color = "Doc Type")
+
+
+
+human_drugs_plot <- filter(umap_df, program == "HC Human Drugs") %>% 
+  ggplot(aes(x = UMAP1, y = UMAP2, color = document_type_description)) +
+  # Use a smaller stroke and size for 100k points
+  geom_point(alpha = 0.7, size = 0.7) + 
+  theme_minimal() +
+  labs(title = "HC Human Drugs LPCO",
+       x = "UMAP Dimension 1",
+       y = "UMAP Dimension 2",
+       color = "Doc Type")
+
+umap_df_thumbs <- umap_df %>%
+  mutate(presigned_url = map_chr(s3_url, function(url_string) {
+    # Extract the key from the full S3 URL if you don't have a 'key' column
+    # This regex assumes your key is everything after the bucket name
+    key <- gsub("https://.*\\.s3\\..*\\.amazonaws\\.com/", "", url_string)
+    
+    s3$generate_presigned_url(
+      client_method = "get_object",
+      params = list(Bucket = s3_bucket, Key = key),
+      expires_in = 3600
+    )
+  }, .progress = "Signing URLs"))
 
 # This opens an interactive window in your RStudio viewer
 ggplotly(p, tooltip = "text")

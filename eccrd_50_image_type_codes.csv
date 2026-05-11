@@ -1,0 +1,49 @@
+Image_Type_Code,Description,Program
+5001,Establishment Licence (EL),HC Active Pharmaceutical ingredients
+5002,Establishment Licence (EL),HC Blood and Blood Components
+5003,Proof of Prescription,HC Blood and Blood Components
+5004,Importer Establishment Registration,"HC Cells, Tissues and Organs"
+5005,Exporter Establishment Registration,"HC Cells, Tissues and Organs"
+5006, Cosmetics Product Number,HC Consumer Products
+5007, Safety Standard Certification,HC Consumer Products
+5008,Donor Semen or Ova Letter of Authorization (LOA),HC Donor Semen and Ova
+5009,Semen or Ova Establihsment Attestation,HC Donor Semen and Ova
+5010,Drug Establishment Licence (EL or DEL),HC Human Drugs
+5011,Drug Identification (DI),HC Human Drugs
+5012,Letter of Authorization (LOA),HC Human Drugs
+5013,Clinical Trial No Objection Letter (CT NOL),HC Human Drugs
+5014,Precursor Authorization Certificate,HC Office of Controlled Substances
+5015,Test Kit Registration,HC Office of Controlled Substances
+5016,Class B Precursor Registration,HC Office of Controlled Substances
+5017,Marihuana for Medical Purposes Regulations Producer Licence,HC Office of Controlled Substances
+5018,Import Permit,HC Office of Controlled Substances
+5019,Medical Devices Licence,HC Medical Device
+5020,Establishment Licence (EL or MDEL),HC Medical Device
+5021,Device Letter of Authorization (LOA)/Request,HC Medical Device
+5022,Site Licence,HC Natural Health Products
+5023,Natural Product Authorization,HC Natural Health Products
+5024,Homeopathic Medicine Drug Identification,HC Natural Health Products
+5025,NHP Notice of Authorization (NOA),HC Natural Health Products
+5026,PMRA Registration,HC Pesticides
+5027,Product Label,HC Pesticides
+5028,PMRA Research Authorization Certificate,HC Pesticides
+5029,PMRA Research Notification Certificate,HC Pesticides
+5030,GROU Import Certificate,HC Pesticides
+5031,Product Label,HC Radiation Emitting Device
+5032,Drug Establishment Licence (EL or DEL),HC Veterinary Drugs
+5033,Veterinary Notification,HC Veterinary Drugs
+5034,Experimental Studies Certificate,HC Veterinary Drugs
+5035,Emergency Drug Release Authorization,HC Veterinary Drugs
+5036,Veterinary No Objection Letter (NOL),HC Veterinary Drugs
+5037,Product Label,HC Consumer Products
+5038,Other,HC Consumer Products
+5039,Drug Identification (DI),HC Veterinary Drugs
+5040,Class A Precursor Licence,HC Office of Controlled Substances
+5041,Industrial Hemp Licence,HC Office of Controlled Substances
+5042,Certificate of Analysis,HC Office of Controlled Substances
+5043,Research Licence,HC Office of Controlled Substances
+5044,Controlled Drugs and Sunstances Act Licence,HC Office of Controlled Substances
+5045,Letter of Authorization (LOA),HC Natural Health Products
+5048,Establihsment Notification Form (FRM-0446),HC Donor Semen and Ova
+5049,Establishment Registration Number,HC Donor Semen and Ova
+5503,Pathogen and Toxin Licence,PHAC Human and Terrestrial Animal Pathogens
