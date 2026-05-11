@@ -124,7 +124,18 @@ md_plot <- filter(umap_df, program == "HC Medical Device") %>%
        y = "UMAP Dimension 2",
        color = "Doc Type")
 
-ocs_plot <- filter(umap_df, program == "HC Office of Controlled Substances") %>% 
+ocs_plot <- filter(umap_df, program == "HC Office of Controlled Substances") %>%
+  mutate(presigned_url = map_chr(s3_url, function(url_string) {
+    # Extract the key from the full S3 URL if you don't have a 'key' column
+    # This regex assumes your key is everything after the bucket name
+    key <- gsub("https://.*\\.s3\\..*\\.amazonaws\\.com/", "", url_string)
+    
+    s3$generate_presigned_url(
+      client_method = "get_object",
+      params = list(Bucket = s3_bucket, Key = key),
+      expires_in = 3600
+    )
+  }, .progress = "Signing URLs")) %>%
   ggplot(aes(x = UMAP1, y = UMAP2, color = document_type_description)) +
   # Use a smaller stroke and size for 100k points
   geom_point(alpha = 0.7, size = 0.7) + 
@@ -162,17 +173,35 @@ umap_df_thumbs <- umap_df %>%
 # This opens an interactive window in your RStudio viewer
 ggplotly(p, tooltip = "text")
 
+ocs_df_thumbs <- umap_df %>%
+  filter(program == "HC Office of Controlled Substances") %>%
+  mutate(presigned_url = map_chr(s3_url, function(url_string) {
+    # Extract the key from the full S3 URL if you don't have a 'key' column
+    # This regex assumes your key is everything after the bucket name
+    key <- gsub("https://.*\\.s3\\..*\\.amazonaws\\.com/", "", url_string)
+    
+    s3$generate_presigned_url(
+      client_method = "get_object",
+      params = list(Bucket = s3_bucket, Key = key),
+      expires_in = 3600
+    )
+  }, .progress = "Signing URLs"),
+  hover_text = paste0(
+    "Document type: ", document_type_description, "<br>",
+    "Image Reference Number: ", image_reference_number, "<br>",
+    "Click to open file"
+  ))
 
 p <- plot_ly(
-  data = doc_aggregated,
-  x = ~mean_umap_1,
-  y = ~mean_umap_2,
-  color = ~cluster_label_mean,
+  data = ocs_df_thumbs,
+  x = ~UMAP1,
+  y = ~UMAP2,
+  color = ~document_type_description,
   type = 'scatter',
   mode = 'markers',
   marker = list(size = 12, opacity = 0.8),
   text = ~hover_text,
-  customdata = ~file_url, # Pass the URL to the JS layer
+  customdata = ~presigned_url, # Pass the URL to the JS layer
   hoverinfo = 'text'
 ) %>%
   layout(
