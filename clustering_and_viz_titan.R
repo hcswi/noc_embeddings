@@ -182,7 +182,10 @@ ocs_df_thumbs <- umap_df %>%
     
     s3$generate_presigned_url(
       client_method = "get_object",
-      params = list(Bucket = s3_bucket, Key = key),
+      params = list(Bucket = s3_bucket, 
+                    Key = key,
+                   ResponseContentType = "image/jpeg",
+                    ResponseContentDisposition = "inline" ),
       expires_in = 3600
     )
   }, .progress = "Signing URLs"),
